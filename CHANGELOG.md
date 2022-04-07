@@ -7,4 +7,5 @@
 
 ## [0.1.0]
 ### Added
-- TODO
+- Added UI Previewer for JSON-based NUI layout files (`.ui` files)
+- NUI Widgets in the current module should be loaded into the previewer classpath
