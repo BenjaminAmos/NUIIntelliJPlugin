@@ -1,0 +1,37 @@
+<!--
+  ~ Copyright 2022 Benjamin Amos
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>com.github.benjaminamos.nuiplugin</id>
+    <name>NUI Previewer</name>
+    <vendor>Benjamin Amos</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="com.github.benjaminamos.nui.files.layout"
+                  implementationClass="com.github.benjaminamos.nuiplugin.languages.NuiFileType"
+                  fieldName="INSTANCE"
+                  extensions="ui"/>
+        <fileEditorProvider
+                implementation="com.github.benjaminamos.nuiplugin.languages.NuiFilePreviewerProvider"
+                order="last"/>
+        <compiler.task execute="AFTER" implementation="com.github.benjaminamos.nuiplugin.services.BuildListener" />
+        <editorNotificationProvider implementation="com.github.benjaminamos.nuiplugin.notifications.BuildMissingClassesNotification" />
+    </extensions>
+</idea-plugin>
