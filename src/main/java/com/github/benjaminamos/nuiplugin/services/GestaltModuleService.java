@@ -16,6 +16,7 @@
 
 package com.github.benjaminamos.nuiplugin.services;
 
+import com.github.benjaminamos.nuiplugin.extensionpoints.beans.GestaltConfiguration;
 import com.github.benjaminamos.nuiplugin.nui.AwtBitmapFont;
 import com.github.benjaminamos.nuiplugin.nui.AwtTextureRegion;
 import com.github.benjaminamos.nuiplugin.nui.UISkinLoader;
@@ -27,6 +28,7 @@ import com.google.gson.JsonParser;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.Service;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
@@ -66,8 +68,11 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
 
         public final VirtualFile file;
         public T cache;
+        public long lastModified;
     }
 
+    private static final ExtensionPointName<GestaltConfiguration> GESTALT_CONFIGURATION_EXTENSION_POINT_NAME =
+            ExtensionPointName.create("com.github.benjaminamos.nuiplugin.gestaltConfiguration");
     private final Project project;
     private final WidgetLibrary widgetLibrary;
     private final Map<String, VirtualFile> moduleRoots = new HashMap<>();
@@ -166,6 +171,17 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
         }, ".skin", moduleContext, urn);
     }
 
+    public UISkin getDefaultSkin() {
+        for (GestaltConfiguration configuration : GESTALT_CONFIGURATION_EXTENSION_POINT_NAME.getExtensionList()) {
+            UISkin skin = getSkinByUrn(configuration.defaultSkin);
+            if (skin != null) {
+                return skin;
+            }
+        }
+
+        return null;
+    }
+
     public Font getFontByUrn(String urn) {
         return getFontByUrn("engine", urn);
     }
@@ -190,13 +206,16 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
 
     public void updateModuleRoots() {
         ReadAction.nonBlocking(() -> {
-        // TODO: Fix things by excluding out directory.
             GlobalSearchScope projectSearchScope = GlobalSearchScope.projectScope(project);
             Set<VirtualFile> outputDirectories = new HashSet<>();
             for (VirtualFile moduleRoot : ProjectRootManager.getInstance(project).getContentRootsFromAllModules()) {
-                VirtualFile outputRoot = moduleRoot.findChild("out");
-                if (outputRoot != null && outputRoot.exists()) {
-                    outputDirectories.add(outputRoot);
+                for (GestaltConfiguration configuration : GESTALT_CONFIGURATION_EXTENSION_POINT_NAME.getExtensionList()) {
+                    for (String directory : configuration.excludeDirs) {
+                        VirtualFile outputRoot = moduleRoot.findChild(directory);
+                        if (outputRoot != null && outputRoot.exists()) {
+                            outputDirectories.add(outputRoot);
+                        }
+                    }
                 }
             }
 
@@ -232,7 +251,7 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
     private <T> T tryGetCache(Map<String, FileCacheEntry<T>> cache, Function<VirtualFile, T> loader, String extension,
                               String moduleContext, String urn) {
         FileCacheEntry<T> cacheEntry = cache.get(urn);
-        if (cacheEntry == null) {
+        if (cacheEntry == null || cacheEntry.lastModified != cacheEntry.file.getModificationStamp()) {
             if (!urn.contains(":")) {
                 urn = moduleContext + ":" + urn;
             }
@@ -259,6 +278,7 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
                     cacheEntry = new FileCacheEntry<>(files.stream().findFirst().get());
                     T cachedValue = loader.apply(cacheEntry.file);
                     cacheEntry.cache = cachedValue;
+                    cacheEntry.lastModified = cacheEntry.file.getModificationStamp();
                     cache.put(urn, cacheEntry);
                     return cachedValue;
                 } catch (Exception ignore) {

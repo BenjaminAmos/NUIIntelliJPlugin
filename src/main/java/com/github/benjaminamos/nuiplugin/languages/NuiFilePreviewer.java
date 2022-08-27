@@ -47,6 +47,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.ui.EditorNotifications;
+import com.intellij.ui.components.JBLoadingPanel;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.util.concurrency.NonUrgentExecutor;
 import com.intellij.util.ui.JBUI;
@@ -83,6 +84,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     private final Project project;
     private final VirtualFile file;
     private final GestaltModuleService gestaltModuleService;
+    private final JBLoadingPanel loadingPanel;
     private final NuiPanel preview;
 
     public NuiFilePreviewer(Project project, VirtualFile file) {
@@ -90,6 +92,10 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
         this.file = file;
         gestaltModuleService = project.getService(GestaltModuleService.class);
         preview = new NuiPanel(gestaltModuleService);
+        loadingPanel = new JBLoadingPanel(null, this);
+        loadingPanel.stopLoading();
+        loadingPanel.setVisible(false);
+        preview.add(loadingPanel);
         Document fileDocument = FileDocumentManager.getInstance().getDocument(file);
         fileDocument.addDocumentListener(this);
 
@@ -136,8 +142,8 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
 
                 Class<? extends UIWidget> widgetClass = (Class<? extends UIWidget>) classLoader.loadClass(widgetPsiClass.getQualifiedName());
                 gestaltModuleService.getWidgetLibrary().addWidgetClass(moduleId + ":" + widgetClass.getSimpleName(), widgetClass);
-            } catch (Exception ignore) {
-                ignore.getMessage();
+            } catch (Throwable t) {
+                t.getMessage();
             }
         }
         gestaltModuleService.invalidateSkins();
@@ -154,7 +160,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     /**
      * Returns a component which represents the editor in UI.
      *
-     * @return
+     * @return the component used.
      */
     @Override
     public @NotNull JComponent getComponent() {
@@ -208,7 +214,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     /**
      * Adds specified listener.
      *
-     * @param listener
+     * @param listener (unused)
      */
     @Override
     public void addPropertyChangeListener(@NotNull PropertyChangeListener listener) {
@@ -217,10 +223,15 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     /**
      * Removes specified listener.
      *
-     * @param listener
+     * @param listener (unused)
      */
     @Override
     public void removePropertyChangeListener(@NotNull PropertyChangeListener listener) {
+    }
+
+    @Override
+    public void selectNotify() {
+        reload();
     }
 
     /**
@@ -240,7 +251,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     }
 
     /**
-     * @param key
+     * @param key (unused)
      * @return a user data value associated with this object. Doesn't require read action.
      */
     @Override
@@ -251,8 +262,8 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     /**
      * Add a new user data value to this object. Doesn't require write action.
      *
-     * @param key
-     * @param value
+     * @param key (unused)
+     * @param value (unused)
      */
     @Override
     public <T> void putUserData(@NotNull Key<T> key, @Nullable T value) {
@@ -264,7 +275,16 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
     }
 
     @Override
+    public void enteredDumbMode() {
+        loadingPanel.setVisible(true);
+        loadingPanel.startLoading();
+    }
+
+    @Override
     public void exitDumbMode() {
+        loadingPanel.stopLoading();
+        loadingPanel.setVisible(false);
+
         preview.reload(project, file, LoadTextUtil.loadText(file).toString());
     }
 
@@ -287,6 +307,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
         private final UIElementLoader uiElementLoader;
         private Set<Module> requiredModules = new HashSet<>();
         private long lastUpdateTime;
+        private UISkin defaultSkin;
         private UIWidget rootWidget;
 
         public NuiPanel(GestaltModuleService gestaltModuleService) {
@@ -366,6 +387,8 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
             }
 
             ApplicationManager.getApplication().invokeLater(this::repaint);
+
+            defaultSkin = gestaltModuleService.getDefaultSkin();
         }
 
         public Set<Module> getRequiredModules() {
@@ -392,17 +415,20 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
 
                 try {
                     rootWidget.update((System.currentTimeMillis() - lastUpdateTime) / 1000.0f);
-                } catch (Throwable ignore) {
-                    // TODO: Show error?
+                } catch (Throwable t) {
+                    LOG.debug(t);
                 }
 
                 nuiCanvas.preRender();
 
                 try {
+                    if (defaultSkin != null) {
+                        nuiCanvas.setSkin(defaultSkin);
+                    }
                     nuiCanvas.drawWidget(rootWidget);
                 } catch (Throwable t) {
                     // TODO: Show error?
-                    t.printStackTrace();
+                    LOG.debug(t);
                 }
 
                 nuiCanvas.postRender();

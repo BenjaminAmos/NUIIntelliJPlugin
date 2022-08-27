@@ -26,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.Icon;
 
-public class NuiFileType extends LanguageFileType {
-    public static NuiFileType INSTANCE = new NuiFileType();
+public class NuiSkinFileType extends LanguageFileType {
+    public static NuiSkinFileType INSTANCE = new NuiSkinFileType();
 
-    private NuiFileType() {
+    private NuiSkinFileType() {
         super(JsonLanguage.INSTANCE, true);
     }
 
@@ -38,12 +38,12 @@ public class NuiFileType extends LanguageFileType {
      */
     @Override
     public @NonNls @NotNull String getName() {
-        return "com.github.benjaminamos.nui.files.layout";
+        return "com.github.benjaminamos.nui.files.skin";
     }
 
     @Override
     public @Nls @NotNull String getDisplayName() {
-        return "NUI Layout";
+        return "NUI Skin";
     }
 
     /**
@@ -51,7 +51,7 @@ public class NuiFileType extends LanguageFileType {
      */
     @Override
     public @NotNull String getDescription() {
-        return "NUI layout file";
+        return "NUI skin file";
     }
 
     /**
@@ -59,12 +59,12 @@ public class NuiFileType extends LanguageFileType {
      */
     @Override
     public @NotNull String getDefaultExtension() {
-        return "ui";
+        return "skin";
     }
 
     /**
      * Returns the icon used for showing files of the type, or {@code null} if no icon should be shown.
-     * @return the icon to show.
+     * @return the icon shown.
      */
     @Override
     public @Nullable Icon getIcon() {

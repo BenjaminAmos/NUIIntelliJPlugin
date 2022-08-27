@@ -49,6 +49,7 @@ import org.terasology.reflection.ReflectionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -161,7 +162,25 @@ public class UIElementLoader {
 
             UIWidget element;
             try {
-                element = widgetClass.newInstance();
+                //element = widgetClass.newInstance();
+
+                Constructor<?> constructor;
+                try {
+                    constructor = widgetClass.getDeclaredConstructor();
+                } catch (NoSuchMethodException ignore) {
+                    constructor = widgetClass.getConstructors()[0];
+                }
+                if (constructor.getParameterCount() == 0) {
+                    element = (UIWidget) constructor.newInstance();
+                } else {
+                    Object[] args = new Object[constructor.getParameterCount()];
+                    for (int paramNo = 0; paramNo < constructor.getParameterCount(); paramNo++) {
+                        Class<?> paramType = constructor.getParameterTypes()[paramNo];
+                        // https://stackoverflow.com/a/38243203
+                        args[paramNo] = java.lang.reflect.Array.get(java.lang.reflect.Array.newInstance(paramType, 1), 0);
+                    }
+                    element = (UIWidget) constructor.newInstance(args);
+                }
                 if (id != null) {
                     Class<?> parentClass = widgetClass;
                     Field fieldMetadata = null;

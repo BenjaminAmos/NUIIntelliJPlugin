@@ -23,15 +23,40 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
 
+    <extensionPoints>
+        <extensionPoint
+                beanClass="com.github.benjaminamos.nuiplugin.extensionpoints.beans.GestaltConfiguration"
+                name="gestaltConfiguration">
+        </extensionPoint>
+    </extensionPoints>
+
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="com.github.benjaminamos.nui.files.layout"
                   implementationClass="com.github.benjaminamos.nuiplugin.languages.NuiFileType"
                   fieldName="INSTANCE"
-                  extensions="ui"/>
+                  extensions="ui" />
+        <fileType name="com.github.benjaminamos.nui.files.skin"
+                  implementationClass="com.github.benjaminamos.nuiplugin.languages.NuiSkinFileType"
+                  fieldName="INSTANCE"
+                  extensions="skin" />
         <fileEditorProvider
                 implementation="com.github.benjaminamos.nuiplugin.languages.NuiFilePreviewerProvider"
-                order="last"/>
+                order="last" />
         <compiler.task execute="AFTER" implementation="com.github.benjaminamos.nuiplugin.services.BuildListener" />
         <editorNotificationProvider implementation="com.github.benjaminamos.nuiplugin.notifications.BuildMissingClassesNotification" />
+        <psi.referenceContributor language="JSON" implementation="com.github.benjaminamos.nuiplugin.languages.contributors.NuiLayoutReferenceContributor" />
+        <psi.referenceContributor language="JSON" implementation="com.github.benjaminamos.nuiplugin.languages.contributors.NuiSkinReferenceContributor" />
+    </extensions>
+    <extensions defaultExtensionNs="com.github.benjaminamos.nuiplugin">
+        <gestaltConfiguration defaultSkin="engine:default">
+            <!-- Regardless of what the IDE might claim, this is valid syntax. -->
+            <excludeDirs>
+                <excludeDir>out</excludeDir>
+                <excludeDir>build</excludeDir>
+                <excludeDir>bin</excludeDir>
+                <!-- TODO: Move the android exclude into a separate Destination Sol plugin.-->
+                <excludeDir>android</excludeDir>
+            </excludeDirs>
+        </gestaltConfiguration>
     </extensions>
 </idea-plugin>
