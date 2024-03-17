@@ -20,6 +20,7 @@ import com.github.benjaminamos.nuiplugin.nui.bitmapfont.FontCharacter;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.intellij.util.ui.ImageUtil;
+import com.intellij.util.ui.UIUtil;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.terasology.joml.geom.Rectanglei;
@@ -44,6 +45,7 @@ import java.util.List;
 @SuppressWarnings("UseJBColor")
 public class AwtCanvasRenderer implements CanvasRenderer {
     private static final java.awt.Color TRANSPARENT = new java.awt.Color(0, 0, 0, 0);
+    private static final AwtFont FALLBACK_FONT = new AwtFont(UIUtil.getLabelFont());
 
     // NOTE: These constants were taken from Terasology's FontMeshBuilder class
     private static final int SHADOW_HORIZONTAL_OFFSET = 1;
@@ -105,7 +107,7 @@ public class AwtCanvasRenderer implements CanvasRenderer {
         AwtTextureRegion awtTexture = (AwtTextureRegion) texture;
 
         Image actualImage = awtTexture.getAwtImage();
-        if (!color.equals(org.terasology.nui.Color.white) && alpha != 1.0f) {
+        if (!color.equals(org.terasology.nui.Color.white) || alpha != 1.0f) {
             actualImage = createTintedImage(awtTexture.getAwtImage(), color, alpha);
         }
 
@@ -181,6 +183,10 @@ public class AwtCanvasRenderer implements CanvasRenderer {
     @Override
     public void drawText(String text, Font font, HorizontalAlign hAlign, VerticalAlign vAlign, Rectanglei absoluteRegion,
                          Colorc color, Colorc shadowColor, float alpha, boolean underlined) {
+        if (font == null) {
+            font = FALLBACK_FONT;
+        }
+
         if (font instanceof AwtFont) {
             graphics.setFont(((AwtFont)font).getAwtFont());
         }

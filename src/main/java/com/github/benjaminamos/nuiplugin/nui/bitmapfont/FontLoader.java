@@ -23,10 +23,9 @@ package com.github.benjaminamos.nuiplugin.nui.bitmapfont;
 
 import com.google.common.base.Charsets;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.util.ImageLoader;
 
+import javax.imageio.ImageIO;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -113,7 +112,7 @@ public class FontLoader {
         if (pageMatcher.matches()) {
             int pageId = Integer.parseInt(pageMatcher.group(1));
             String textureName = pageMatcher.group(2);
-            builder.addPage(pageId, ImageLoader.loadFromStream(basePath.findChild(textureName).getInputStream()));
+            builder.addPage(pageId, ImageIO.read(basePath.findChild(textureName).getInputStream()));
         } else {
             throw new IOException("Failed to load font - invalid page line '" + pageInfo + "'");
         }

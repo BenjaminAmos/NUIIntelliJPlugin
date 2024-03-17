@@ -46,6 +46,8 @@
         <editorNotificationProvider implementation="com.github.benjaminamos.nuiplugin.notifications.BuildMissingClassesNotification" />
         <psi.referenceContributor language="JSON" implementation="com.github.benjaminamos.nuiplugin.languages.contributors.NuiLayoutReferenceContributor" />
         <psi.referenceContributor language="JSON" implementation="com.github.benjaminamos.nuiplugin.languages.contributors.NuiSkinReferenceContributor" />
+        <completion.contributor language="JSON" implementationClass="com.github.benjaminamos.nuiplugin.languages.contributors.NuiSkinStructureCompletionContributor" />
+        <colorProvider implementation="com.github.benjaminamos.nuiplugin.languages.extensions.NuiColourProvider" />
     </extensions>
     <extensions defaultExtensionNs="com.github.benjaminamos.nuiplugin">
         <gestaltConfiguration defaultSkin="engine:default">

@@ -116,36 +116,39 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
         }
 
         PsiClass uiWidgetClass = JavaPsiFacade.getInstance(project).findClass(UIWidget.class.getName(), GlobalSearchScope.allScope(project));
-        PsiClass[] inherited = ClassInheritorsSearch
-                .search(uiWidgetClass, fileModule.getModuleRuntimeScope(false), true)
-                .toArray(new PsiClass[0]);
+        if (uiWidgetClass != null) {
+            PsiClass[] inherited = ClassInheritorsSearch
+                    .search(uiWidgetClass, fileModule.getModuleRuntimeScope(false), true)
+                    .toArray(new PsiClass[0]);
 
-        List<Path> classPaths = new ArrayList<>();
-        for (VirtualFile outputPath : OrderEnumerator.orderEntries(fileModule).classes().getRoots()) {
-            classPaths.add(Path.of(outputPath.getPath().replace("!", "")));
-        }
-
-        // TODO: Cache class loaders per module
-        NuiClassLoader classLoader = new NuiClassLoader(classPaths);
-
-        for (PsiClass widgetPsiClass : inherited) {
-            if (widgetPsiClass.getQualifiedName() == null || widgetPsiClass.getQualifiedName().startsWith("org.terasology.nui.")) {
-                continue;
+            List<Path> classPaths = new ArrayList<>();
+            for (VirtualFile outputPath : OrderEnumerator.orderEntries(fileModule).classes().getRoots()) {
+                classPaths.add(Path.of(outputPath.getPath().replace("!", "")));
             }
 
-            try {
-                String moduleId = gestaltModuleService.getModuleIdForFile(widgetPsiClass.getContainingFile().getVirtualFile());
-                if (moduleId == null) {
-                    // Assume the "engine" module, for now.
-                    moduleId = "engine";
+            // TODO: Cache class loaders per module
+            NuiClassLoader classLoader = new NuiClassLoader(classPaths);
+
+            for (PsiClass widgetPsiClass : inherited) {
+                if (widgetPsiClass.getQualifiedName() == null || widgetPsiClass.getQualifiedName().startsWith("org.terasology.nui.")) {
+                    continue;
                 }
 
-                Class<? extends UIWidget> widgetClass = (Class<? extends UIWidget>) classLoader.loadClass(widgetPsiClass.getQualifiedName());
-                gestaltModuleService.getWidgetLibrary().addWidgetClass(moduleId + ":" + widgetClass.getSimpleName(), widgetClass);
-            } catch (Throwable t) {
-                t.getMessage();
+                try {
+                    String moduleId = gestaltModuleService.getModuleIdForFile(widgetPsiClass.getContainingFile().getVirtualFile());
+                    if (moduleId == null) {
+                        // Assume the "engine" module, for now.
+                        moduleId = "engine";
+                    }
+
+                    Class<? extends UIWidget> widgetClass = (Class<? extends UIWidget>) classLoader.loadClass(widgetPsiClass.getQualifiedName());
+                    gestaltModuleService.getWidgetLibrary().addWidgetClass(moduleId + ":" + widgetClass.getSimpleName(), widgetClass);
+                } catch (Throwable t) {
+                    t.getMessage();
+                }
             }
         }
+
         gestaltModuleService.invalidateSkins();
 
         preview.reload(project, file, LoadTextUtil.loadText(file).toString());
@@ -400,8 +403,7 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
             super.paintComponent(g);
 
             if (rootWidget != null) {
-                Graphics nuiGraphics = g.create();
-                nuiCanvasRenderer.setGraphics(nuiGraphics);
+                nuiCanvasRenderer.setGraphics(g);
 
                 Dimension size = this.getSize();
                 nuiCanvasRenderer.setSize(new Vector2i(size.width, size.height));
@@ -434,7 +436,6 @@ public class NuiFilePreviewer implements FileEditor, DocumentListener, DumbServi
                 nuiCanvas.postRender();
 
                 lastUpdateTime = System.currentTimeMillis();
-                g.dispose();
             }
         }
 

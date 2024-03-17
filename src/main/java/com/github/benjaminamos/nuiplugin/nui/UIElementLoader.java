@@ -264,7 +264,7 @@ public class UIElementLoader {
                             }
                         }
                     } catch (RuntimeException | IllegalAccessException | InvocationTargetException e) {
-                        logger.error("Failed to deserialize field " + field.getName() + " of " + type + "\n" + e.getMessage());
+                        logger.error("Failed to deserialize field " + field.getName() + " of " + type, e);
                     }
                 }
             }

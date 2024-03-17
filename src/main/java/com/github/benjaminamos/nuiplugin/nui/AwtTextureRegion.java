@@ -16,6 +16,7 @@
 
 package com.github.benjaminamos.nuiplugin.nui;
 
+import com.intellij.util.JBHiDPIScaledImage;
 import org.joml.Vector2i;
 import org.terasology.joml.geom.Rectanglef;
 import org.terasology.joml.geom.Rectanglei;
@@ -38,7 +39,7 @@ public class AwtTextureRegion implements UITextureRegion {
      */
     @Override
     public Rectanglef getRegion() {
-        return new Rectanglef(0, 0, image.getWidth(null), image.getHeight(null));
+        return new Rectanglef(0, 0, getWidth(), getHeight());
     }
 
     /**
@@ -46,22 +47,32 @@ public class AwtTextureRegion implements UITextureRegion {
      */
     @Override
     public Rectanglei getPixelRegion() {
-        return new Rectanglei(0, 0, image.getWidth(null), image.getHeight(null));
+        return new Rectanglei(0, 0, getWidth(), getHeight());
     }
 
     @Override
     public int getWidth() {
-        return image.getWidth(null);
+        int width = image.getWidth(null);
+        if (image instanceof JBHiDPIScaledImage) {
+            return (int) (width * ((JBHiDPIScaledImage) image).getScale());
+        } else {
+            return width;
+        }
     }
 
     @Override
     public int getHeight() {
-        return image.getHeight(null);
+        int height = image.getHeight(null);
+        if (image instanceof JBHiDPIScaledImage) {
+            return (int) (height * ((JBHiDPIScaledImage) image).getScale());
+        } else {
+            return height;
+        }
     }
 
     @Override
     public Vector2i size() {
-        return new Vector2i(image.getWidth(null), image.getHeight(null));
+        return new Vector2i(getWidth(), getHeight());
     }
 
     public Image getAwtImage() {

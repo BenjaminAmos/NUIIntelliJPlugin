@@ -6,7 +6,7 @@ plugins {
     // Java support
     id("java")
     // Gradle IntelliJ Plugin
-    id("org.jetbrains.intellij") version "1.8.1"
+    id("org.jetbrains.intellij") version "1.17.2"
     // Gradle Changelog Plugin
     id("org.jetbrains.changelog") version "1.3.1"
 }
@@ -21,8 +21,7 @@ repositories {
     maven {
         // required to provide runtime dependencies to build-logic.
         name = "Terasology Artifactory"
-        url = uri("http://artifactory.terasology.org/artifactory/virtual-repo-live")
-        isAllowInsecureProtocol = true // This is an upstream issue, so I can't do anything about it.
+        url = uri("https://artifactory.terasology.io/artifactory/virtual-repo-live")
     }
 }
 

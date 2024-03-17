@@ -48,6 +48,10 @@ public class NuiTypeReference extends PsiPolyVariantReferenceBase<JsonStringLite
     public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
         PsiClass uiWidgetClass = JavaPsiFacade.getInstance(myElement.getProject())
                 .findClass(UIWidget.class.getName(), GlobalSearchScope.allScope(myElement.getProject()));
+        if (uiWidgetClass == null) {
+            return new ResolveResult[0];
+        }
+
         String type = myElement.getValue();
         PsiClass[] referencedClasses = PsiShortNamesCache.getInstance(myElement.getProject())
                 .getClassesByName(type, GlobalSearchScope.allScope(myElement.getProject()));
@@ -63,18 +67,17 @@ public class NuiTypeReference extends PsiPolyVariantReferenceBase<JsonStringLite
     }
 
     @Override
-    public PsiElement handleElementRename(@NotNull String newElementName) throws IncorrectOperationException {
-        throw new IncorrectOperationException();
-    }
-
-    @Override
     public PsiElement bindToElement(@NotNull PsiElement element) throws IncorrectOperationException {
-        return resolve();
-    }
+        if (element instanceof PsiClass) {
+            PsiClass classElement = (PsiClass) element;
+            if (classElement.getName() == null) {
+                return resolve();
+            }
 
-    @Override
-    public boolean isSoft() {
-        return true;
+            return handleElementRename(classElement.getName());
+        } else {
+            return resolve();
+        }
     }
 
     @Override

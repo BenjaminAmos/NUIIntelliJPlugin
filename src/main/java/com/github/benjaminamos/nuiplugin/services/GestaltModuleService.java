@@ -36,7 +36,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.GlobalSearchScopesCore;
-import com.intellij.util.ImageLoader;
 import com.intellij.util.concurrency.NonUrgentExecutor;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -55,6 +54,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -125,7 +125,9 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
     public UITextureRegion getImageByUrn(String moduleContext, String urn) {
         UITextureRegion result = tryGetCache(moduleImageCache, file -> {
             try {
-                return new AwtTextureRegion(urn, ImageLoader.loadFromStream(file.getInputStream()));
+                try (InputStream fileStream = file.getInputStream()) {
+                    return new AwtTextureRegion(urn, ImageIO.read(fileStream));
+                }
             } catch (Exception ignore) {
                 return null;
             }
@@ -205,7 +207,7 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
     }
 
     public void updateModuleRoots() {
-        ReadAction.nonBlocking(() -> {
+        ReadAction.nonBlocking(Executors.callable(() -> {
             GlobalSearchScope projectSearchScope = GlobalSearchScope.projectScope(project);
             Set<VirtualFile> outputDirectories = new HashSet<>();
             for (VirtualFile moduleRoot : ProjectRootManager.getInstance(project).getContentRootsFromAllModules()) {
@@ -231,7 +233,7 @@ public final class GestaltModuleService implements DumbService.DumbModeListener,
             FilenameIndex.getVirtualFilesByName(project, "module.info", false, projectSearchScope).stream()
                     .filter(excludeOutputDirectoriesPredicate)
                     .forEach(file -> moduleRoots.put(getModuleNameFromManifest(file), file.getParent()));
-        }).inSmartMode(project).submit(NonUrgentExecutor.getInstance());
+        })).inSmartMode(project).submit(NonUrgentExecutor.getInstance());
     }
 
     public void invalidateSkins() {

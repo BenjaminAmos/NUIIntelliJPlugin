@@ -54,29 +54,38 @@ public class NuiLayoutReferenceContributor extends PsiReferenceContributor {
             }
         })), new NuiElementTypeReferenceProvider());
 
+        PatternCondition<JsonProperty> withTypePropertySiblingCondition = new PatternCondition<>("withSibling") {
+            @Override
+            public boolean accepts(@NotNull JsonProperty jsonProperty, ProcessingContext context) {
+                PsiElement parent = jsonProperty.getParent();
+                if (parent == null) {
+                    return false;
+                }
+
+                for (PsiElement child : parent.getChildren()) {
+                    if (child instanceof JsonProperty) {
+                        JsonProperty typeProperty = (JsonProperty) child;
+                        if ("type".equals(typeProperty.getName())) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+        };
+
         registrar.registerReferenceProvider(PlatformPatterns.psiElement()
-                .withParent(
-                        PlatformPatterns.psiElement(JsonProperty.class)
-                                .with(new PatternCondition<>("withSibling") {
-                                    @Override
-                                    public boolean accepts(@NotNull JsonProperty jsonProperty, ProcessingContext context) {
-                                        PsiElement parent = jsonProperty.getParent();
-                                        if (parent == null) {
-                                            return false;
-                                        }
-
-                                        for (PsiElement child : parent.getChildren()) {
-                                            if (child instanceof JsonProperty) {
-                                                JsonProperty typeProperty = (JsonProperty) child;
-                                                if ("type".equals(typeProperty.getName())) {
-                                                    return true;
-                                                }
-                                            }
-                                        }
-
-                                        return false;
-                                    }
-                                })
+                .andOr(
+                    PlatformPatterns.psiElement().withParent(
+                            PlatformPatterns.psiElement(JsonProperty.class)
+                                    .with(withTypePropertySiblingCondition)
+                    ),
+                    PlatformPatterns.psiElement().withSuperParent(3,
+                            PlatformPatterns.psiElement(JsonProperty.class)
+                                    .withName("layoutInfo")
+                                    .with(withTypePropertySiblingCondition)
+                    )
                 )
                 .and(new FilterPattern(new ElementFilter() {
             @Override
